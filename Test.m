@@ -324,4 +324,8 @@ legend('Vitesse','Vitesse limite','Vitesse sécuritaire')
 
 laisncoawinclakwcxpAMCXPAlmx
 sadkljfdaslkjfh
+<<<<<<< Updated upstream
 gutfutfuyf
+=======
+iyfuyfuigiuhoih
+>>>>>>> Stashed changes

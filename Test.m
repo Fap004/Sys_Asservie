@@ -314,7 +314,7 @@ plot(z_bassin,v_bassin,'LineWidth',2)
 hold on
 yline(v_lim,'--','Vitesse limite')
 yline(v_securitaire,'--','Vitesse sécuritaire')
-grid on12222
+grid on
 xlabel('Profondeur z (m)')
 ylabel('Vitesse (m/s)')
 title('Vitesse du participant dans le bassin')

@@ -36,7 +36,7 @@ K_bb = 5 / 7 * (g * r_arm) / L_plaque;
 
 %% 
 
-sim('SM1_Linear.slx');
+sim('SM1.slx');
 
 %%
 
@@ -49,6 +49,7 @@ plot(t, theta, '-r', 'LineWidth', 2);
 grid on;
 xlabel('Temps (s)');
 ylabel('Amplitude');
+legend('Vitesse angulaire', 'Angle');
 title('Moteur-Engrenage-Charge');
 
 subplot(2, 1, 2);
@@ -58,4 +59,5 @@ plot(t, x, '-r', 'LineWidth', 2);
 grid on;
 xlabel('Temps (s)');
 ylabel('Amplitude');
+legend({'Vitesse', 'Position'}, 'Location', 'best');
 title('Charge-Sphère');

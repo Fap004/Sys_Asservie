@@ -36,7 +36,7 @@ K_bb = 5 / 7 * (g * r_arm) / L_plaque;
 
 %% 
 
-sim('SM1.slx');
+sim('SM1_Linear.slx');
 
 %%
 

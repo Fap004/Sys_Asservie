@@ -2,6 +2,7 @@ clc;
 close all;
 clear;
 
+addpath(genpath(pwd));
 %%
 
 % sphère

@@ -101,5 +101,15 @@ poles = pole(G);
 
 disp('Pôles avec fonctions de transfert en série:');
 disp(poles);
+
+% Pôles individuels de chaque sous-système
+poles_gcm = pole(G_cm);
+poles_gsc = pole(G_sc);
+
+disp('--- Pôles individuels ---');
+disp('Pôles de G_cm(s) :');
+disp(poles_gcm);
+disp('Pôles de G_sc(s) :');
+disp(poles_gsc);
  
 

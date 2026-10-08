@@ -2,70 +2,62 @@ clc;
 close all;
 clear;
 
-addpath(genpath(pwd));
-%%
-
-% sphère
+% Sphère
 m_s = 0.0030;          
 J_s = 7.7028125e-7;        
 r_s = 0.019625;           
 
-% gravité
+% Gravité
 g = 9.8100;             
 
-% partie électrique du moteur
+% Partie électrique du moteur
 R_m = 1; % à déterminer             
 K_m = 0.0076776;         
 K_t = 0.0076830;        
 n_m = 0.69;           
 
-% partie mécanique du moteur, la charge et engrenage
+% Partie mécanique du moteur, la charge et engrenage
 J_m = 3.9001e-7;         
 J_eq = 0.0017728;         
 B_eq = 1; % à déterminer           
 n_g = 0.9000;       
 K_g = 70;              
 
-% poutre
+% Poutre
 r_arm = 0.0254;          
 L_plaque = 0.4254;            
 
-% calculs 
+% Calculs 
 J_c = (K_g^2) * J_m - J_eq;
 A_m = (n_m * K_t * n_g * K_g)/R_m;
 K_bb = 5 / 7 * (g * r_arm) / L_plaque;
 
-%% 
-
-sim('SM1.slx');
+%%
+% Simulation
+sim('SM1_d.slx');
 
 %%
-
+% Simulink
 figure();
-
 subplot(2, 1, 1);
-plot(t, omega, '--b', 'LineWidth', 2);
+plot(t, omega, '--b');
 hold on;
-plot(t, theta, '-r', 'LineWidth', 2);
-plot(t, Vm, '-m', 'LineWidth', 2);
+plot(t, theta, '-r');
 grid on;
 xlabel('Temps (s)');
 ylabel('Amplitude');
-legend('Vitesse angulaire', 'Angle','Tension');
 title('Moteur-Engrenage-Charge');
 
 subplot(2, 1, 2);
-plot(t, v_x, '--b', 'LineWidth', 2);
+plot(t, v_x, '--b');
 hold on;
-plot(t, x, '-r', 'LineWidth', 2);
-plot(t, Vm, '-m', 'LineWidth', 2);
+plot(t, x, '-r');
 grid on;
 xlabel('Temps (s)');
 ylabel('Amplitude');
-legend({'Vitesse', 'Position','Tension'}, 'Location', 'best');
 title('Charge-Sphère');
 
-%% Matrices
+% Matrices
 A = [ 0, 1, 0, 0;
       0, 0, K_bb, 0;
       0, 0, 0, 1;
@@ -84,7 +76,7 @@ p = pole(sys);
 disp('Pôles avec matrices:')
 disp(p);
 
-%% Fonction de transfert
+% Fonction de transfert
 tau = J_eq / B_eq;
 K_cm = A_m / B_eq;
 
@@ -111,5 +103,63 @@ disp('Pôles de G_cm(s) :');
 disp(poles_gcm);
 disp('Pôles de G_sc(s) :');
 disp(poles_gsc);
- 
 
+% Valeurs propres
+poly_A = poly(A);            
+valeurs_propres_poly = roots(poly_A); 
+disp('Valeurs propres avec poly:')
+disp(valeurs_propres_poly);
+
+[num_G, den_G] = tfdata(G, 'v'); 
+valeurs_propres_tf = roots(den_G);
+disp('Valeurs propres avec roots:');
+disp(valeurs_propres_tf);
+
+% Conditions d'équilibre
+V_m_eq = 0;                 
+x_eq = 0;                  
+v_x_eq = 0;                 
+theta_c_eq = 0;             
+omega_c_eq = 0;            
+
+X_eq = [x_eq; v_x_eq; theta_c_eq; omega_c_eq];
+Y_eq = [x_eq; theta_c_eq];
+
+% Graphique de la réponse
+t2 = (0:0.01:20)';
+r_echelon  = ones(size(t2));
+r_rampe    = t2;
+r_parabole = t2.^2 / 2;
+
+% Calcul des réponses
+y_echelon  = lsim(G, r_echelon, t2);
+y_rampe    = lsim(G, r_rampe, t2);
+y_parabole = lsim(G, r_parabole, t2);
+
+figure;
+
+% Échelon
+subplot(3, 1, 1);
+plot(t2, r_echelon, '--', t2, y_echelon);
+title('Échelon');
+ylabel('Position [rad]');
+legend('Consigne (r)', 'Réponse (y)', 'Location', 'Best');
+grid on;
+
+% Rampe
+subplot(3, 1, 2);
+plot(t2, r_rampe, '--', t2, y_rampe);
+title('Rampe');
+ylabel('Position [rad]');
+legend('Consigne (r)', 'Réponse (y)', 'Location', 'Best');
+grid on;
+
+% Parabole
+subplot(3, 1, 3);
+plot(t2, r_parabole, '--', t2, y_parabole);
+title('Parabole');
+ylabel('Position [rad]');
+xlabel('Temps [s]');
+legend('Consigne (r)', 'Réponse (y)', 'Location', 'Best');
+grid on;
+ 

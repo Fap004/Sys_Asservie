@@ -2,42 +2,54 @@ clc;
 close all;
 clear;
 
-% Sphère
+load('data_1v_4-09_100hz.mat');
+t_omega = tsimu(1:end-1);                  
+t0 = tsimu(find(Vm > 0.5, 1));
+
+idx = t_omega >= t0;                
+K_omega = mean(omega_c(idx))       
+omega_63 = 0.632 * K_omega;
+idx_63 = find(t_omega >= t0 & omega_c >= omega_63, 1);
+tau = t_omega(idx_63) - t0          
+K_rad = K_omega * (pi / 180);   
+
+G = tf(K_omega, [tau, 1]);
+t_sim_filtre = t_omega(t_omega >= t0) - t0;
+omega_c_filtre = lsim(G, ones(size(t_sim_filtre)), t_sim_filtre);
+
+figure();
+plot(t_omega, omega_c);
+hold on;
+plot(t_sim_filtre + t0, omega_c_filtre);
+grid on;
+xlabel('Temps (s)');
+ylabel('Vitesse angulaire (deg/s)');
+
+n_m  = 0.69;           
+K_t  = 0.0076830;        
+K_m  = 0.0076776;         
+J_eq = 0.0017728;         
+n_g  = 0.9000;       
+K_g  = 70;              
+a = n_g * K_g * n_m * K_t;                   
+b = n_g * (K_g^2) * n_m * K_t * K_m;         
+R_m  = (a * tau) / (K_rad * J_eq)
+B_eq = (a/K_rad - b) / R_m
+
 m_s = 0.0030;          
 J_s = 7.7028125e-7;        
-r_s = 0.019625;           
-
-% Gravité
-g = 9.8100;             
-
-% Partie électrique du moteur
-R_m = 1; % à déterminer             
-K_m = 0.0076776;         
-K_t = 0.0076830;        
-n_m = 0.69;           
-
-% Partie mécanique du moteur, la charge et engrenage
-J_m = 3.9001e-7;         
-J_eq = 0.0017728;         
-B_eq = 1; % à déterminer           
-n_g = 0.9000;       
-K_g = 70;              
-
-% Poutre
+r_s = 0.019625;  
+g = 9.8100;       
+J_m = 3.9001e-7;  
 r_arm = 0.0254;          
 L_plaque = 0.4254;            
 
-% Calculs 
 J_c = (K_g^2) * J_m - J_eq;
-A_m = (n_m * K_t * n_g * K_g)/R_m;
+A_m = (n_m * K_t * n_g * K_g) / R_m;
 K_bb = 5 / 7 * (g * r_arm) / L_plaque;
 
-%%
-% Simulation
 sim('SM1_d.slx');
 
-%%
-% Simulink
 figure();
 subplot(2, 1, 1);
 plot(t, omega, '--b');
@@ -62,37 +74,27 @@ A = [ 0, 1, 0, 0;
       0, 0, K_bb, 0;
       0, 0, 0, 1;
       0, 0, 0, -B_eq/J_eq ];
-
 B = [0; 0; 0; A_m/J_eq];
-
 C = [1, 0, 0, 0; 0, 0, 1, 0];
-
 D = [0; 0];
-
 sys = ss(A, B, C, D);
-
 p = pole(sys);
-
 disp('Pôles avec matrices:')
 disp(p);
 
-% Fonction de transfert
-tau = J_eq / B_eq;
+tau_sys = J_eq / B_eq;
 K_cm = A_m / B_eq;
 
 num_gcm = [K_cm];
-den_gcm = [tau, 1, 0]; 
+den_gcm = [tau_sys, 1, 0]; 
 G_cm = tf(num_gcm, den_gcm);
 
 num_gsc = [K_bb];
 den_gsc = [1, 0, 0]; 
 G_sc = tf(num_gsc, den_gsc);
 
-G = series(G_cm, G_sc);
-poles = pole(G);
-
-disp('Pôles avec fonctions de transfert en série:');
-disp(poles);
+G_total = series(G_cm, G_sc);
+poles = pole(G_total)
 
 % Pôles individuels de chaque sous-système
 poles_gcm = pole(G_cm);
@@ -105,12 +107,7 @@ disp('Pôles de G_sc(s) :');
 disp(poles_gsc);
 
 % Valeurs propres
-poly_A = poly(A);            
-valeurs_propres_poly = roots(poly_A); 
-disp('Valeurs propres avec poly:')
-disp(valeurs_propres_poly);
-
-[num_G, den_G] = tfdata(G, 'v'); 
+[num_G, den_G] = tfdata(G_total, 'v'); 
 valeurs_propres_tf = roots(den_G);
 disp('Valeurs propres avec roots:');
 disp(valeurs_propres_tf);
@@ -120,7 +117,7 @@ V_m_eq = 0;
 x_eq = 0;                  
 v_x_eq = 0;                 
 theta_c_eq = 0;             
-omega_c_eq = 0;            
+omega_c_eq = 0;
 
 X_eq = [x_eq; v_x_eq; theta_c_eq; omega_c_eq];
 Y_eq = [x_eq; theta_c_eq];
@@ -132,9 +129,9 @@ r_rampe    = t2;
 r_parabole = t2.^2 / 2;
 
 % Calcul des réponses
-y_echelon  = lsim(G, r_echelon, t2);
-y_rampe    = lsim(G, r_rampe, t2);
-y_parabole = lsim(G, r_parabole, t2);
+y_echelon  = lsim(G_total, r_echelon, t2);
+y_rampe    = lsim(G_total, r_rampe, t2);
+y_parabole = lsim(G_total, r_parabole, t2);
 
 figure;
 
@@ -162,4 +159,12 @@ ylabel('Position [rad]');
 xlabel('Temps [s]');
 legend('Consigne (r)', 'Réponse (y)', 'Location', 'Best');
 grid on;
+
+figure();
+plot(t, x, '-r', 'LineWidth', 1.5);
+grid on;
+xlabel('Temps (s)');
+ylabel('Position x (m)');
+title('Simulation non linéaire avec saturation de la position');
+ylim([-0.25 0.25]);
  

@@ -3,10 +3,10 @@ close all;
 clear;
 
 load('data_1v_4-09_100hz.mat');
-t_omega = tsimu(1:end-1);                  
+t_omega = tsimu(1:end-1) + + diff(tsimu)/2;                  
 t0 = tsimu(find(Vm > 0.5, 1));
 
-idx = t_omega >= t0;                
+idx = t_omega >= t0 + 0.5;                
 K_omega = mean(omega_c(idx))       
 omega_63 = 0.632 * K_omega;
 idx_63 = find(t_omega >= t0 & omega_c >= omega_63, 1);
@@ -36,9 +36,9 @@ b = n_g * (K_g^2) * n_m * K_t * K_m;
 R_m  = (a * tau) / (K_rad * J_eq)
 B_eq = (a/K_rad - b) / R_m
 
-m_s = 0.0030;          
-J_s = 7.7028125e-7;        
-r_s = 0.019625;  
+m_s = 0.0640;          
+J_s = 4.1290e-6;        
+r_s = 0.0127;  
 g = 9.8100;       
 J_m = 3.9001e-7;  
 r_arm = 0.0254;          
@@ -48,27 +48,38 @@ J_c = (K_g^2) * J_m - J_eq;
 A_m = (n_m * K_t * n_g * K_g) / R_m;
 K_bb = 5 / 7 * (g * r_arm) / L_plaque;
 
-sim('SM1_d.slx');
+sim('SM1.slx');
 
 figure();
 subplot(2, 1, 1);
-plot(t, omega, '--b');
+% plot(t, omega, '--b');
 hold on;
 plot(t, theta, '-r');
 grid on;
 xlabel('Temps (s)');
 ylabel('Amplitude');
+% legend ('omega','theta');
 title('Moteur-Engrenage-Charge');
 
 subplot(2, 1, 2);
-plot(t, v_x, '--b');
+% plot(t, v_x, '--b');
 hold on;
 plot(t, x, '-r');
 grid on;
 xlabel('Temps (s)');
 ylabel('Amplitude');
+% legend('vitesse','x')
 title('Charge-Sphère');
 
+disp('valeur final d''angle')
+disp(rad2deg(theta(end)))
+disp('allure final d''angle')
+disp(omega(end))
+
+disp('valeur final de la position')
+disp(x(end))
+disp('allure final de la position')
+disp(v_x(end))
 % Matrices
 A = [ 0, 1, 0, 0;
       0, 0, K_bb, 0;
@@ -79,8 +90,6 @@ C = [1, 0, 0, 0; 0, 0, 1, 0];
 D = [0; 0];
 sys = ss(A, B, C, D);
 p = pole(sys);
-disp('Pôles avec matrices:')
-disp(p);
 
 tau_sys = J_eq / B_eq;
 K_cm = A_m / B_eq;
@@ -94,23 +103,15 @@ den_gsc = [1, 0, 0];
 G_sc = tf(num_gsc, den_gsc);
 
 G_total = series(G_cm, G_sc);
-poles = pole(G_total)
+poles = pole(G_total);
 
 % Pôles individuels de chaque sous-système
 poles_gcm = pole(G_cm);
 poles_gsc = pole(G_sc);
 
-disp('--- Pôles individuels ---');
-disp('Pôles de G_cm(s) :');
-disp(poles_gcm);
-disp('Pôles de G_sc(s) :');
-disp(poles_gsc);
-
 % Valeurs propres
 [num_G, den_G] = tfdata(G_total, 'v'); 
 valeurs_propres_tf = roots(den_G);
-disp('Valeurs propres avec roots:');
-disp(valeurs_propres_tf);
 
 % Conditions d'équilibre
 V_m_eq = 0;                 
